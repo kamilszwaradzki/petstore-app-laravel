@@ -3,15 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pet;
+use App\Services\PetService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 
 class PetController extends Controller
 {
+    private $petService;
+
+    public function __construct(PetService $petService)
+    {
+        $this->petService = $petService;
+    }
+
     public function index()
     {
-        $response = Http::acceptJson()->get('https://petstore.swagger.io/v2/pet/findByStatus?status=available&status=pending&status=sold');
+        $response = $this->petService->indexPets();
         return view('Pet.index', ['pets' => $response->collect()]);
     }
 
@@ -29,13 +36,9 @@ class PetController extends Controller
                         ->withErrors($validator)
                         ->withInput();
         }
-        $response = Http::acceptJson()->get('https://petstore.swagger.io/v2/pet/' . $id);
-        $response->onError(fn ($err) => $validator->after(function ($validator) use ($err) {
-            $validator->errors()->add(
-                'server',
-                json_decode($err->body(), true)['message']
-            );
-        }));
+
+        $response = $this->petService->showPet($validator, $id);
+
         if ($validator->fails()) {
             return back()
                         ->withErrors($validator)
@@ -61,13 +64,9 @@ class PetController extends Controller
                         ->withErrors($validator)
                         ->withInput($request->all());
         }
-        $response = Http::acceptJson()->post('https://petstore.swagger.io/v2/pet', $request->all());
-        $response->onError(fn ($err) => $validator->after(function ($validator) use ($err) {
-            $validator->errors()->add(
-                'server',
-                json_decode($err->body(), true)['message']
-            );
-        }));
+
+        $response = $this->petService->createPet($validator, $request);
+
         if ($validator->fails()) {
             return back()
                         ->withErrors($validator)
@@ -90,13 +89,9 @@ class PetController extends Controller
                         ->withErrors($validator)
                         ->withInput();
         }
-        $response = Http::acceptJson()->get('https://petstore.swagger.io/v2/pet/' . $id);
-        $response->onError(fn ($err) => $validator->after(function ($validator) use ($err) {
-            $validator->errors()->add(
-                'server',
-                json_decode($err->body(), true)['message']
-            );
-        }));
+
+        $response = $this->petService->showPet($validator, $id);
+
         if ($validator->fails()) {
             return back()
                         ->withErrors($validator)
@@ -118,13 +113,9 @@ class PetController extends Controller
                         ->withErrors($validator)
                         ->withInput();
         }
-        $response = Http::acceptJson()->put('https://petstore.swagger.io/v2/pet', $request->all() + ['id' => $id]);
-        $response->onError(fn ($err) => $validator->after(function ($validator) use ($err) {
-            $validator->errors()->add(
-                'server',
-                json_decode($err->body(), true)['message']
-            );
-        }));
+
+        $response = $this->petService->updatePet($validator, $request, $id);
+
         if ($validator->fails()) {
             return back()
                         ->withErrors($validator)
@@ -146,13 +137,9 @@ class PetController extends Controller
                         ->withErrors($validator)
                         ->withInput($request->all());
         }
-        $response = Http::acceptJson()->delete('https://petstore.swagger.io/v2/pet/' . $id, $request->all());
-        $response->onError(fn ($err) => $validator->after(function ($validator) use ($err) {
-            $validator->errors()->add(
-                'server',
-                json_decode($err->body(), true)['message']
-            );
-        }));
+
+        $response = $this->petService->deletePet($validator, $request, $id);
+
         if ($validator->fails()) {
             return back()
                         ->withErrors($validator)
